@@ -1,4 +1,11 @@
-package ratelimit
+/*
+ * @Author: lvhaidong
+ * @Date: 2022-06-19 23:26:28
+ * @LastEditors: lvhaidong
+ * @LastEditTime: 2022-06-20 08:39:49
+ * @Description:
+ */
+package adaptivelimit
 
 import (
 	"context"

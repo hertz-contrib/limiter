@@ -1,4 +1,4 @@
-package ratelimit
+package adaptivelimit
 
 import (
 	"errors"
