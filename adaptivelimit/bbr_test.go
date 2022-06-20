@@ -159,10 +159,10 @@ func TestBBRMinRtWithCache(t *testing.T) {
 func TestBBRMaxQps(t *testing.T) {
 	bbr := NewLimiter(optsForTest...)
 	bucketDuration := windowSizeTest / time.Duration(bucketNumTest)
-	passStat := NewRollingWindow(10, bucketDuration)
-	rtStat := NewRollingWindow(10, bucketDuration)
+	passStat := NewRollingWindow(10, bucketDuration, IgnoreCurrentBucket())
+	rtStat := NewRollingWindow(10, bucketDuration, IgnoreCurrentBucket())
 	for i := 0; i < 10; i++ {
-		passStat.Add(float64((i + 1) * 100))
+		passStat.Add(float64((i + 2) * 100))
 		for j := i*10 + 1; j <= i*10+10; j++ {
 			rtStat.Add(float64(j))
 		}
