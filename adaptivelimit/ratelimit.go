@@ -2,7 +2,7 @@
  * @Author: lvhaidong
  * @Date: 2022-06-19 23:26:28
  * @LastEditors: lvhaidong
- * @LastEditTime: 2022-06-20 08:39:49
+ * @LastEditTime: 2022-06-20 08:52:09
  * @Description:
  */
 package adaptivelimit
@@ -21,8 +21,8 @@ var (
 /*
 	CPU sampling algorithm using BBR
 */
-func Ratelimit(opts ...options) app.HandlerFunc {
-	limiter := NewLimiter()
+func Ratelimit(opts ...Option) app.HandlerFunc {
+	limiter := NewLimiter(opts...)
 	return func(c context.Context, ctx *app.RequestContext) {
 		done, err := limiter.Allow()
 		if err != nil {
