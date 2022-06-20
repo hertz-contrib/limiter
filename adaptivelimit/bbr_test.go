@@ -162,7 +162,7 @@ func TestBBRMaxQps(t *testing.T) {
 	passStat := NewRollingWindow(10, bucketDuration)
 	rtStat := NewRollingWindow(10, bucketDuration)
 	for i := 0; i < 10; i++ {
-		passStat.Add(float64((i + 2) * 100))
+		passStat.Add(float64((i + 1) * 100))
 		for j := i*10 + 1; j <= i*10+10; j++ {
 			rtStat.Add(float64(j))
 		}
