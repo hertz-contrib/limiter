@@ -1,3 +1,18 @@
+/*
+ * Copyright 2022 CloudWeGo Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package adaptivelimit
 
 import (
@@ -5,33 +20,18 @@ import (
 	"time"
 )
 
-// Use the long enough past time as start time, in case timex.Now() - lastTime equals 0.
-var initTime = time.Now().AddDate(-1, -1, -1)
-
-// Now returns a relative time duration since initTime, which is not important.
-// The caller only needs to care about the relative value.
-func Now() time.Duration {
-	return time.Since(initTime)
-}
-
-// Since returns a diff since given d.
-func Since(d time.Duration) time.Duration {
-	return time.Since(initTime) - d
-}
-
 type (
-	// RollingWindowOption let callers customize the RollingWindow.
 	RollingWindowOption func(rollingWindow *RollingWindow)
-
 	// RollingWindow defines a rolling window to calculate the events in buckets with time interval.
 	RollingWindow struct {
-		lock          sync.RWMutex
-		size          int
-		win           *window
-		interval      time.Duration
-		offset        int
+		lock     sync.RWMutex
+		size     int
+		win      *window
+		interval time.Duration
+		offset   int
+		lastTime time.Time
+
 		ignoreCurrent bool
-		lastTime      time.Duration // start time of the last bucket
 	}
 )
 
@@ -46,7 +46,7 @@ func NewRollingWindow(size int, interval time.Duration, opts ...RollingWindowOpt
 		size:     size,
 		win:      newWindow(size),
 		interval: interval,
-		lastTime: Now(),
+		lastTime: time.Now(),
 	}
 	for _, opt := range opts {
 		opt(w)
@@ -69,7 +69,7 @@ func (rw *RollingWindow) Reduce(fn func(b *Bucket)) {
 
 	var diff int
 	span := rw.span()
-	// ignore current bucket, because of partial data
+	//ignore current bucket
 	if span == 0 && rw.ignoreCurrent {
 		diff = rw.size - 1
 	} else {
@@ -82,11 +82,10 @@ func (rw *RollingWindow) Reduce(fn func(b *Bucket)) {
 }
 
 func (rw *RollingWindow) span() int {
-	offset := int(Since(rw.lastTime) / rw.interval)
+	offset := int(time.Since(rw.lastTime) / rw.interval)
 	if 0 <= offset && offset < rw.size {
 		return offset
 	}
-
 	return rw.size
 }
 
@@ -103,9 +102,7 @@ func (rw *RollingWindow) updateOffset() {
 	}
 
 	rw.offset = (offset + span) % rw.size
-	now := Now()
-	// align to interval time boundary
-	rw.lastTime = now - (now-rw.lastTime)%rw.interval
+	rw.lastTime = rw.lastTime.Add(time.Since(rw.lastTime.Add(time.Since(rw.lastTime) % rw.interval)))
 }
 
 // Bucket defines the bucket that holds sum and num of additions.

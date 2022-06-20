@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 CloudWeGo Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package adaptivelimit
 
 import (
@@ -6,16 +22,43 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/shirou/gopsutil/cpu"
+	linuxproc "github.com/c9s/goprocinfo/linux"
 )
 
 var (
-	gCPU int64
+	gCPU  int64
+	gStat linuxproc.CPUStat
 )
 
 type (
 	cpuGetter func() int64
 )
+
+func getCpuLoad() linuxproc.CPUStat {
+	stat, err := linuxproc.ReadStat("/proc/stat")
+	if err != nil {
+		panic("stat read fail")
+	}
+	return stat.CPUStatAll
+}
+
+func calcCoreUsage(curr, prev linuxproc.CPUStat) float64 {
+
+	PrevIdle := prev.Idle + prev.IOWait
+	Idle := curr.Idle + curr.IOWait
+
+	PrevNonIdle := prev.User + prev.Nice + prev.System + prev.IRQ + prev.SoftIRQ + prev.Steal
+	NonIdle := curr.User + curr.Nice + curr.System + curr.IRQ + curr.SoftIRQ + curr.Steal
+
+	PrevTotal := PrevIdle + PrevNonIdle
+	Total := Idle + NonIdle
+	totald := Total - PrevTotal
+	idled := Idle - PrevIdle
+
+	CPU_Percentage := (float64(totald) - float64(idled)) / float64(totald)
+
+	return CPU_Percentage
+}
 
 func init() {
 	go cpuproc()
@@ -34,9 +77,11 @@ func cpuproc() {
 
 	// EMA algorithm: https://blog.csdn.net/m0_38106113/article/details/81542863
 	for range ticker.C {
-		usage, _ := cpu.Percent(opt.SamplingTime, false)
+		preState := gStat
+		curState := getCpuLoad()
+		usage := calcCoreUsage(preState, curState)
 		prevCPU := atomic.LoadInt64(&gCPU)
-		curCPU := int64(float64(prevCPU)*opt.Decay + float64(usage[0]*10)*(1.0-opt.Decay))
+		curCPU := int64(float64(prevCPU)*opt.Decay + float64(usage*10)*(1.0-opt.Decay))
 		atomic.StoreInt64(&gCPU, curCPU)
 	}
 }
