@@ -20,7 +20,7 @@ import "time"
 
 type Option func(o *options)
 
-//default option
+// default option
 var opt = options{
 	Window:       time.Second * 10,
 	Bucket:       100,                    // 100ms

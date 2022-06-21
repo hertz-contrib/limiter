@@ -1,10 +1,11 @@
-# Adaptivelimit (This is a community driven project)
+# limiter (This is a community driven project)
+
+##  Adaptivelimit
+
+###  Adaptive Algorithm for [Hertz](https://github.com/cloudwego/hertz)
 
 
-#### Adaptive Algorithm for [Hertz](https://github.com/cloudwego/hertz)
-
-
-### How to use?
+#### How to use?
 
 1. Set middleware
 
@@ -29,7 +30,7 @@ import (
 )
 
 func main() {
-	h := server.Default()
+	h := server.Default(server.WithHostPorts(":1000"))
 	h.Use(Adaptlivelimit())
 	h.GET("/hello", func(c context.Context, ctx *app.RequestContext) {
 		ctx.String(consts.StatusOK, "hello")

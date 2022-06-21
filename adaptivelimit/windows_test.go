@@ -43,7 +43,7 @@ func TestRollingWindowAdd(t *testing.T) {
 	r.Add(1)
 	assert.Equal(t, []float64{0, 0, 1}, list())
 	time.Sleep(5 * time.Millisecond)
-	//next cycle
+	// next cycle
 	r.Add(2)
 	r.Add(3)
 	//  0 0 1  -> 0 1 0 -> 0 1 2 -> 0 1 5
@@ -63,7 +63,7 @@ func TestRollingWindowSum(t *testing.T) {
 	r.Add(1)
 	assert.Equal(t, float64(1), list())
 	time.Sleep(5 * time.Millisecond)
-	//next cycle
+	// next cycle
 	r.Add(2)
 	r.Add(3)
 	//  0 0 1  -> 0 1 0 -> 0 1 2 -> 0 1 5
@@ -91,7 +91,7 @@ func TestRollingWindowsAvg(t *testing.T) {
 	r.Add(1)
 	assert.Equal(t, float64(1), list())
 	time.Sleep(5 * time.Second)
-	//next cycle
+	// next cycle
 	r.Add(2)
 	r.Add(3)
 	time.Sleep(5 * time.Second)

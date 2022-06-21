@@ -43,7 +43,6 @@ func getCpuLoad() linuxproc.CPUStat {
 }
 
 func calcCoreUsage(curr, prev linuxproc.CPUStat) float64 {
-
 	PrevIdle := prev.Idle + prev.IOWait
 	Idle := curr.Idle + curr.IOWait
 
@@ -133,7 +132,7 @@ func NewLimiter(opts ...Option) *BBR {
 	return limiter
 }
 
-//Maximum number of requests in a single sampling window
+// Maximum number of requests in a single sampling window
 func (l *BBR) maxPASS() int64 {
 	passCache := l.maxPASSCache.Load()
 	if passCache != nil {
@@ -141,7 +140,7 @@ func (l *BBR) maxPASS() int64 {
 		if l.timespan(ps.time) < 1 {
 			return ps.val
 		}
-		//Avoid glitches caused by fluctuations
+		// Avoid glitches caused by fluctuations
 	}
 	var rawMaxPass float64
 	l.passStat.Reduce(func(b *Bucket) {
@@ -243,7 +242,7 @@ func (l *BBR) Allow() (func(), error) {
 	}
 	atomic.AddInt64(&l.inFlight, 1)
 	start := time.Now().UnixNano()
-	//DoneFunc record time-consuming
+	// DoneFunc record time-consuming
 	return func() {
 		rt := (time.Now().UnixNano() - start) / int64(time.Millisecond)
 		l.rtStat.Add(float64(rt))

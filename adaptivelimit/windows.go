@@ -69,7 +69,7 @@ func (rw *RollingWindow) Reduce(fn func(b *Bucket)) {
 
 	var diff int
 	span := rw.span()
-	//ignore current bucket
+	// ignore current bucket
 	if span == 0 && rw.ignoreCurrent {
 		diff = rw.size - 1
 	} else {

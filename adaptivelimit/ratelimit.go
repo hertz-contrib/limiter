@@ -22,9 +22,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
 
-var (
-	ErrLimit = "Hertz Adaptlive limiting"
-)
+var ErrLimit = "Hertz Adaptlive limiting"
 
 /*
 	CPU sampling algorithm using BBR
