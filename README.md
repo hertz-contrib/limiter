@@ -11,7 +11,7 @@
 
 
 ```
-    h := server.Default()
+	h := server.Default()
 	h.Use(Adaptlivelimit())
 ```
 
