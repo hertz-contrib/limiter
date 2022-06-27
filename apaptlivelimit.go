@@ -14,22 +14,27 @@
  * limitations under the License.
  */
 
-package adaptivelimit
+package limiter
 
 import (
 	"context"
-	"testing"
 
 	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
 
-func TestMain(m *testing.M) {
-	h := server.Default(server.WithHostPorts(":1000"))
-	h.Use(Adaptlivelimit())
-	h.GET("/hello", func(c context.Context, ctx *app.RequestContext) {
-		ctx.String(consts.StatusOK, "hello")
-	})
-	h.Spin()
+/*
+	Adaptlivelimit: CPU sampling algorithm using BBR
+*/
+func Adaptlivelimit(opts ...Option) app.HandlerFunc {
+	limiter := NewLimiter(opts...)
+	return func(c context.Context, ctx *app.RequestContext) {
+		done, err := limiter.Allow()
+		if err != nil {
+			ctx.AbortWithError(consts.StatusTooManyRequests, err)
+		} else {
+			ctx.Next(c)
+			done()
+		}
+	}
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package adaptivelimit
+package limiter
 
 import (
 	"math/rand"
@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hertz-contrib/limiter/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,7 +51,7 @@ func warmup(bbr *BBR, count int) {
 
 func forceAllow(bbr *BBR) {
 	inflight := bbr.inFlight
-	bbr.inFlight = bbr.maxPASS() - 1
+	bbr.inFlight = bbr.maxPass() - 1
 	done, err := bbr.Allow()
 	if err == nil {
 		done()
@@ -85,35 +86,35 @@ func TestBBR(t *testing.T) {
 	t.Log("drop: ", drop)
 }
 
-func TestBBRMaxPass(t *testing.T) {
+func TestBBRmaxPass(t *testing.T) {
 	bucketDuration := windowSizeTest / time.Duration(bucketNumTest)
 	bbr := NewLimiter(optsForTest...)
 	for i := 1; i <= 10; i++ {
 		bbr.passStat.Add(float64(i * 100))
 		time.Sleep(bucketDuration)
 	}
-	assert.Equal(t, int64(1000), bbr.maxPASS())
+	assert.Equal(t, int64(1000), bbr.maxPass())
 	// // default max pass is equal to 1.
 	bbr = NewLimiter(optsForTest...)
-	assert.Equal(t, int64(1), bbr.maxPASS())
+	assert.Equal(t, int64(1), bbr.maxPass())
 }
 
-func TestBBRMaxPassWithCache(t *testing.T) {
+func TestBBRmaxPassWithCache(t *testing.T) {
 	bucketDuration := windowSizeTest / time.Duration(bucketNumTest)
 	bbr := NewLimiter(optsForTest...)
 	// witch cache, value of latest bucket is not counted instantly.
 	// after a bucket duration time, this bucket will be fully counted.
 	bbr.passStat.Add(float64(50))
 	time.Sleep(bucketDuration / 2)
-	assert.Equal(t, int64(1), bbr.maxPASS())
+	assert.Equal(t, int64(1), bbr.maxPass())
 
 	bbr.passStat.Add(float64(50))
 	time.Sleep(bucketDuration / 2)
-	assert.Equal(t, int64(1), bbr.maxPASS())
+	assert.Equal(t, int64(1), bbr.maxPass())
 
 	bbr.passStat.Add(float64(1))
 	time.Sleep(bucketDuration)
-	assert.Equal(t, int64(100), bbr.maxPASS())
+	assert.Equal(t, int64(100), bbr.maxPass())
 }
 
 func TestBBRMinRt(t *testing.T) {
@@ -131,7 +132,7 @@ func TestBBRMinRt(t *testing.T) {
 
 	// default max min rt is equal to maxFloat64.
 	bbr = NewLimiter(optsForTest...)
-	bbr.rtStat = NewRollingWindow(10, bucketDuration)
+	bbr.rtStat = utils.NewRollingWindow(10, bucketDuration)
 	assert.Equal(t, int64(1), bbr.minRT())
 }
 
@@ -159,8 +160,8 @@ func TestBBRMinRtWithCache(t *testing.T) {
 func TestBBRMaxQps(t *testing.T) {
 	bbr := NewLimiter(optsForTest...)
 	bucketDuration := windowSizeTest / time.Duration(bucketNumTest)
-	passStat := NewRollingWindow(10, bucketDuration, IgnoreCurrentBucket())
-	rtStat := NewRollingWindow(10, bucketDuration, IgnoreCurrentBucket())
+	passStat := utils.NewRollingWindow(10, bucketDuration, utils.IgnoreCurrentBucket())
+	rtStat := utils.NewRollingWindow(10, bucketDuration, utils.IgnoreCurrentBucket())
 	for i := 0; i < 10; i++ {
 		passStat.Add(float64((i + 2) * 100))
 		for j := i*10 + 1; j <= i*10+10; j++ {
@@ -182,8 +183,8 @@ func TestBBRShouldDrop(t *testing.T) {
 		return cpu
 	}
 	bucketDuration := windowSizeTest / time.Duration(bucketNumTest)
-	passStat := NewRollingWindow(10, bucketDuration)
-	rtStat := NewRollingWindow(10, bucketDuration)
+	passStat := utils.NewRollingWindow(10, bucketDuration)
+	rtStat := utils.NewRollingWindow(10, bucketDuration)
 	for i := 0; i < 10; i++ {
 		passStat.Add(float64((i + 1) * 100))
 		for j := i*10 + 1; j <= i*10+10; j++ {

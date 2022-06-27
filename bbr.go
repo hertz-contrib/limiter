@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package adaptivelimit
+package limiter
 
 import (
 	"errors"
@@ -22,27 +22,35 @@ import (
 	"sync/atomic"
 	"time"
 
-	linuxproc "github.com/c9s/goprocinfo/linux"
+	"github.com/c9s/goprocinfo/linux"
+	"github.com/hertz-contrib/limiter/utils"
 )
 
 var (
-	gCPU  int64
-	gStat linuxproc.CPUStat
+	gCPU     int64
+	gStat    linux.CPUStat
+	ErrLimit = "Hertz Adaptlive limite"
 )
 
 type (
 	cpuGetter func() int64
 )
 
-func getCpuLoad() linuxproc.CPUStat {
-	stat, err := linuxproc.ReadStat("/proc/stat")
+/*
+	getCpuLoad : Get CPU State by reading /proc/stat
+*/
+func getCpuLoad() linux.CPUStat {
+	stat, err := linux.ReadStat("/proc/stat")
 	if err != nil {
 		panic("stat read fail")
 	}
 	return stat.CPUStatAll
 }
 
-func calcCoreUsage(curr, prev linuxproc.CPUStat) float64 {
+/*
+	calcCoreUsage ：Calculate the overall utilization by reading the previous CPU state and the current CPU state
+*/
+func calcCoreUsage(curr, prev linux.CPUStat) float64 {
 	PrevIdle := prev.Idle + prev.IOWait
 	Idle := curr.Idle + curr.IOWait
 
@@ -60,17 +68,18 @@ func calcCoreUsage(curr, prev linuxproc.CPUStat) float64 {
 }
 
 func init() {
-	go cpuproc()
+	go cpuProc()
 }
 
-// cpu = cpuᵗ⁻¹ * decay + cpuᵗ * (1 - decay)
-// EMA Fix CPU load situation
-func cpuproc() {
+/*
+	cpuProc : CPU load correction by EMA algorithm
+*/
+func cpuProc() {
 	ticker := time.NewTicker(opt.SamplingTime) // same to cpu sample rate
 	defer func() {
 		ticker.Stop()
 		if err := recover(); err != nil {
-			go cpuproc()
+			go cpuProc()
 		}
 	}()
 
@@ -85,22 +94,24 @@ func cpuproc() {
 	}
 }
 
-// counterCache is used to cache maxPASS and minRt result.
-// Value of current bucket is not counted in real time.
-// Cache time is equal to a bucket duration.
+/*
+	counterCache is used to cache maxPASS and minRt result.
+*/
 type counterCache struct {
 	val  int64
 	time time.Time
 }
 
-// BBR implements bbr-like limiter.
-// It is inspired by sentinel.
-// https://github.com/alibaba/Sentinel/wiki/%E7%B3%BB%E7%BB%9F%E8%87%AA%E9%80%82%E5%BA%94%E9%99%90%E6%B5%81
+/*
+	BBR implements bbr-like limiter.
+	It is inspired by sentinel.
+	https://github.com/alibaba/Sentinel/wiki/%E7%B3%BB%E7%BB%9F%E8%87%AA%E9%80%82%E5%BA%94%E9%99%90%E6%B5%81
+*/
 type BBR struct {
 	cpu             cpuGetter
-	passStat        *RollingWindow // request succeeded
-	rtStat          *RollingWindow // time consume
-	inFlight        int64          // Number of requests being processed
+	passStat        *utils.RollingWindow // request succeeded
+	rtStat          *utils.RollingWindow // time consume
+	inFlight        int64                // Number of requests being processed
 	bucketPerSecond int64
 	bucketDuration  time.Duration
 
@@ -112,13 +123,12 @@ type BBR struct {
 	opts options
 }
 
-// NewLimiter returns a bbr limiter
 func NewLimiter(opts ...Option) *BBR {
 	opt := NewOption(opts...)
 	bucketDuration := opt.Window / time.Duration(opt.Bucket)
 	// 10s / 100  = 100ms
-	passStat := NewRollingWindow(opt.Bucket, bucketDuration, IgnoreCurrentBucket())
-	rtStat := NewRollingWindow(opt.Bucket, bucketDuration, IgnoreCurrentBucket())
+	passStat := utils.NewRollingWindow(opt.Bucket, bucketDuration, utils.IgnoreCurrentBucket())
+	rtStat := utils.NewRollingWindow(opt.Bucket, bucketDuration, utils.IgnoreCurrentBucket())
 
 	limiter := &BBR{
 		opts:            opt,
@@ -132,8 +142,10 @@ func NewLimiter(opts ...Option) *BBR {
 	return limiter
 }
 
-// Maximum number of requests in a single sampling window
-func (l *BBR) maxPASS() int64 {
+/*
+	maxPass: Maximum number of requests in a single sampling window
+*/
+func (l *BBR) maxPass() int64 {
 	passCache := l.maxPASSCache.Load()
 	if passCache != nil {
 		ps := passCache.(*counterCache)
@@ -143,7 +155,7 @@ func (l *BBR) maxPASS() int64 {
 		// Avoid glitches caused by fluctuations
 	}
 	var rawMaxPass float64
-	l.passStat.Reduce(func(b *Bucket) {
+	l.passStat.Reduce(func(b *utils.Bucket) {
 		rawMaxPass = math.Max(float64(b.Sum), rawMaxPass)
 	})
 	if rawMaxPass <= 0 {
@@ -156,9 +168,9 @@ func (l *BBR) maxPASS() int64 {
 	return int64(rawMaxPass)
 }
 
-// timespan returns the passed bucket count
-// since lastTime, if it is one bucket duration earlier than
-// the last recorded time, it will return the BucketNum.
+/*
+	timespan: returns the passed bucket count
+*/
 func (l *BBR) timespan(lastTime time.Time) int {
 	v := int(time.Since(lastTime) / l.bucketDuration)
 	if v > -1 {
@@ -167,7 +179,9 @@ func (l *BBR) timespan(lastTime time.Time) int {
 	return l.opts.Bucket
 }
 
-// Minimum response time
+/*
+	minRT: Minimum response time
+*/
 func (l *BBR) minRT() int64 {
 	rtCache := l.minRtCache.Load()
 	if rtCache != nil {
@@ -178,7 +192,7 @@ func (l *BBR) minRT() int64 {
 	}
 	// Go to the nearest response time within 1s
 	var rawMinRT float64 = 1 << 31
-	l.rtStat.Reduce(func(b *Bucket) {
+	l.rtStat.Reduce(func(b *utils.Bucket) {
 		if b.Count <= 0 {
 			return
 		}
@@ -196,10 +210,16 @@ func (l *BBR) minRT() int64 {
 	return int64(rawMinRT)
 }
 
+/*
+	maxInFlight: Calculating the load
+*/
 func (l *BBR) maxInFlight() int64 {
-	return int64(math.Ceil(float64(l.maxPASS()*l.minRT()*l.bucketPerSecond) / 1000.0))
+	return int64(math.Ceil(float64(l.maxPass()*l.minRT()*l.bucketPerSecond) / 1000.0))
 }
 
+/*
+	shouldDrop：(CPU load > 80% || (now - prevDrop) < 1s) and (MaxPass * MinRT * windows) / 1000 < InFlight
+*/
 func (l *BBR) shouldDrop() bool {
 	now := time.Duration(time.Now().UnixNano())
 	if l.cpu() < l.opts.CPUThreshold {
@@ -234,8 +254,9 @@ func (l *BBR) shouldDrop() bool {
 	return drop
 }
 
-// Allow checks all inbound traffic.
-
+/*
+	Allow：Determine the alarm triggering conditions, record the interface time consumption and QPS
+*/
 func (l *BBR) Allow() (func(), error) {
 	if l.shouldDrop() {
 		return nil, errors.New(ErrLimit)

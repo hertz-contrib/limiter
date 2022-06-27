@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package adaptivelimit
+
+package utils
 
 import (
 	"sync"
@@ -22,21 +23,21 @@ import (
 
 type (
 	RollingWindowOption func(rollingWindow *RollingWindow)
-	// RollingWindow defines a rolling window to calculate the events in buckets with time interval.
-	RollingWindow struct {
-		lock     sync.RWMutex
-		size     int
-		win      *window
-		interval time.Duration
-		offset   int
-		lastTime time.Time
-
+	RollingWindow       struct {
+		lock          sync.RWMutex
+		size          int
+		win           *window
+		interval      time.Duration
+		offset        int
+		lastTime      time.Time
 		ignoreCurrent bool
 	}
 )
 
-// NewRollingWindow returns a RollingWindow that with size buckets and time interval,
-// use opts to customize the RollingWindow.
+/*
+	NewRollingWindow: returns a RollingWindow that with size buckets and time interval,
+	use opts to customize the RollingWindow.
+*/
 func NewRollingWindow(size int, interval time.Duration, opts ...RollingWindowOption) *RollingWindow {
 	if size < 1 {
 		panic("size must be greater than 0")
@@ -54,7 +55,9 @@ func NewRollingWindow(size int, interval time.Duration, opts ...RollingWindowOpt
 	return w
 }
 
-// Add adds value to current bucket.
+/*
+	Add: adds value to current bucket.
+*/
 func (rw *RollingWindow) Add(v float64) {
 	rw.lock.Lock()
 	defer rw.lock.Unlock()
@@ -62,7 +65,9 @@ func (rw *RollingWindow) Add(v float64) {
 	rw.win.add(rw.offset, v)
 }
 
-// Reduce runs fn on all buckets, ignore current bucket if ignoreCurrent was set.
+/*
+	Reduce: runs fn on all buckets, ignore current bucket if ignoreCurrent was set.
+*/
 func (rw *RollingWindow) Reduce(fn func(b *Bucket)) {
 	rw.lock.RLock()
 	defer rw.lock.RUnlock()
@@ -78,9 +83,13 @@ func (rw *RollingWindow) Reduce(fn func(b *Bucket)) {
 	if diff > 0 {
 		offset := (rw.offset + span + 1) % rw.size
 		rw.win.reduce(offset, diff, fn)
+
 	}
 }
 
+/*
+	span: Return the elapsed time interval
+*/
 func (rw *RollingWindow) span() int {
 	offset := int(time.Since(rw.lastTime) / rw.interval)
 	if 0 <= offset && offset < rw.size {
@@ -89,6 +98,9 @@ func (rw *RollingWindow) span() int {
 	return rw.size
 }
 
+/*
+	updateOffset: Update the offset of window
+*/
 func (rw *RollingWindow) updateOffset() {
 	span := rw.span()
 	if span <= 0 {
@@ -105,7 +117,9 @@ func (rw *RollingWindow) updateOffset() {
 	rw.lastTime = rw.lastTime.Add(time.Since(rw.lastTime.Add(time.Since(rw.lastTime) % rw.interval)))
 }
 
-// Bucket defines the bucket that holds sum and num of additions.
+/*
+	Bucket: defines the bucket that holds sum and num of additions.
+*/
 type Bucket struct {
 	Sum   float64
 	Count int64
@@ -151,7 +165,9 @@ func (w *window) resetBucket(offset int) {
 	w.buckets[offset%w.size].reset()
 }
 
-// IgnoreCurrentBucket lets the Reduce call ignore current bucket.
+/*
+	IgnoreCurrentBucket: lets the Reduce call ignore current bucket.
+*/
 func IgnoreCurrentBucket() RollingWindowOption {
 	return func(w *RollingWindow) {
 		w.ignoreCurrent = true

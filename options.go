@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package adaptivelimit
+package limiter
 
 import "time"
 
 type Option func(o *options)
 
-// default option
 var opt = options{
 	Window:       time.Second * 10,
 	Bucket:       100,                    // 100ms
@@ -29,47 +28,53 @@ var opt = options{
 	Decay:        0.95,                   //
 }
 
-// options of bbr limiter.
 type options struct {
-	// WindowSize defines time duration per window
-	Window time.Duration
-	// BucketNum defines bucket number for each window
-	Bucket int
-	// CPUThreshold
+	Window       time.Duration
+	Bucket       int
 	CPUThreshold int64
 	SamplingTime time.Duration
 	Decay        float64
 }
 
-//  window size.
+/*
+	WithWindow: defines time duration per window
+*/
 func WithWindow(window time.Duration) Option {
 	return func(o *options) {
 		o.Window = window
 	}
 }
 
-// bucket ize.
+/*
+	WithBucket: defines bucket number for each window
+*/
 func WithBucket(bucket int) Option {
 	return func(o *options) {
 		o.Bucket = bucket
 	}
 }
 
-// cpu threshold
+/*
+	WithCPUThreshold: defines cpu threshold load cputhreshold / 1000
+*/
 func WithCPUThreshold(threshold int64) Option {
 	return func(o *options) {
 		o.CPUThreshold = threshold
 	}
 }
 
-// sapmleing time
+/*
+	WithSamplingTime: defines cpu sampling time interval
+*/
 func WithSamplingTime(samplingTime time.Duration) Option {
 	return func(o *options) {
 		o.SamplingTime = samplingTime
 	}
 }
 
-// decay time
+/*
+	WithDecay: defines cpu attenuation factor
+*/
 func WithDecay(decay float64) Option {
 	return func(o *options) {
 		o.Decay = decay
