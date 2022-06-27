@@ -32,6 +32,7 @@ func Adaptlivelimit(opts ...Option) app.HandlerFunc {
 		done, err := limiter.Allow()
 		if err != nil {
 			ctx.AbortWithError(consts.StatusTooManyRequests, err)
+			ctx.String(consts.StatusTooManyRequests, ctx.Errors.String())
 		} else {
 			ctx.Next(c)
 			done()
