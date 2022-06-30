@@ -30,7 +30,7 @@ import (
 var (
 	gCPU     int64
 	gStat    linux.CPUStat
-	ErrLimit = "Hertz Adaptlive limit"
+	ErrLimit = "Hertz Adaptive Limit"
 )
 
 type (

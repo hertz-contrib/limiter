@@ -1,6 +1,6 @@
 # limiter (This is a community driven project)
 
-##  Adaptivelimit
+##  AdaptiveLimit
 
 ###  Adaptive Algorithm for [Hertz](https://github.com/cloudwego/hertz)
 
@@ -17,7 +17,7 @@
 
 ```
 	h := server.Default()
-	h.Use(Adaptlivelimit())
+	h.Use(AdaptiveLimit())
 ```
 
 
@@ -36,7 +36,7 @@ import (
 
 func main() {
 	h := server.Default(server.WithHostPorts(":1000"))
-	h.Use(Adaptlivelimit())
+	h.Use(AdaptiveLimit())
 	h.GET("/hello", func(c context.Context, ctx *app.RequestContext) {
 		ctx.String(consts.StatusOK, "hello")
 	})

@@ -23,10 +23,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
 
-/*
-	Adaptlivelimit: CPU sampling algorithm using BBR
-*/
-func Adaptlivelimit(opts ...Option) app.HandlerFunc {
+//	AdaptiveLimit CPU sampling algorithm using BBR
+func AdaptiveLimit(opts ...Option) app.HandlerFunc {
 	limiter := NewLimiter(opts...)
 	return func(c context.Context, ctx *app.RequestContext) {
 		done, err := limiter.Allow()
