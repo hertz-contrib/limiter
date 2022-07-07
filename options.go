@@ -36,35 +36,36 @@ type options struct {
 	Decay        float64
 }
 
-//	WithWindow defines time duration per window
+// WithWindow defines time duration per window
 func WithWindow(window time.Duration) Option {
 	return func(o *options) {
 		o.Window = window
 	}
 }
 
-//	WithBucket defines bucket number for each window
+// WithBucket defines bucket number for each window
 func WithBucket(bucket int) Option {
 	return func(o *options) {
 		o.Bucket = bucket
 	}
 }
 
-//	WithCPUThreshold defines cpu threshold load cputhreshold / 1000
+// WithCPUThreshold defines cpu threshold load.
+// e.g. if you want to set the cpu threshold to 80%, you should set the value to 800.
 func WithCPUThreshold(threshold int64) Option {
 	return func(o *options) {
 		o.CPUThreshold = threshold
 	}
 }
 
-//	WithSamplingTime defines cpu sampling time interval
+// WithSamplingTime defines cpu sampling time interval
 func WithSamplingTime(samplingTime time.Duration) Option {
 	return func(o *options) {
 		o.SamplingTime = samplingTime
 	}
 }
 
-//	WithDecay defines cpu attenuation factor
+// WithDecay defines cpu attenuation factor
 func WithDecay(decay float64) Option {
 	return func(o *options) {
 		o.Decay = decay
