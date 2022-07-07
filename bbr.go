@@ -37,7 +37,7 @@ type (
 	cpuGetter func() int64
 )
 
-//	getCpuLoad  get CPU state by reading /proc/stat
+// getCpuLoad  get CPU state by reading /proc/stat
 func getCpuLoad() linux.CPUStat {
 	stat, err := linux.ReadStat("/proc/stat")
 	if err != nil {
@@ -46,7 +46,7 @@ func getCpuLoad() linux.CPUStat {
 	return stat.CPUStatAll
 }
 
-//	calcCoreUsage calculate the overall utilization by reading the previous CPU state and the current CPU state
+// calcCoreUsage calculate the overall utilization by reading the previous CPU state and the current CPU state
 func calcCoreUsage(curr, prev linux.CPUStat) float64 {
 	PrevIdle := prev.Idle + prev.IOWait
 	Idle := curr.Idle + curr.IOWait
@@ -68,7 +68,7 @@ func init() {
 	go cpuProc()
 }
 
-//	cpuProc  CPU load correction by EMA algorithm
+// cpuProc  CPU load correction by EMA algorithm
 func cpuProc() {
 	ticker := time.NewTicker(opt.SamplingTime) // same to cpu sample rate
 	defer func() {
@@ -89,15 +89,14 @@ func cpuProc() {
 	}
 }
 
-//	counterCache is used to cache maxPASS and minRt result.
+// counterCache is used to cache maxPASS and minRt result.
 type counterCache struct {
 	val  int64
 	time time.Time
 }
 
-//	BBR implements bbr-like limiter.It is inspired by sentinel.
-//  https://github.com/alibaba/Sentinel/wiki/%E7%B3%BB%E7%BB%9F%E8%87%AA%E9%80%82%E5%BA%94%E9%99%90%E6%B5%81
-
+// BBR implements bbr-like limiter.It is inspired by sentinel.
+// https://github.com/alibaba/Sentinel/wiki/%E7%B3%BB%E7%BB%9F%E8%87%AA%E9%80%82%E5%BA%94%E9%99%90%E6%B5%81
 type BBR struct {
 	cpu             cpuGetter
 	passStat        *utils.RollingWindow // request succeeded
@@ -133,7 +132,7 @@ func NewLimiter(opts ...Option) *BBR {
 	return limiter
 }
 
-//	maxPass maximum number of requests in a single sampling window
+// maxPass maximum number of requests in a single sampling window
 func (l *BBR) maxPass() int64 {
 	passCache := l.maxPASSCache.Load()
 	if passCache != nil {
@@ -166,7 +165,7 @@ func (l *BBR) timespan(lastTime time.Time) int {
 	return l.opts.Bucket
 }
 
-//	minRT minimum response time
+// minRT minimum response time
 func (l *BBR) minRT() int64 {
 	rtCache := l.minRtCache.Load()
 	if rtCache != nil {
@@ -195,12 +194,12 @@ func (l *BBR) minRT() int64 {
 	return int64(rawMinRT)
 }
 
-//	maxInFlight calculating the load
+// maxInFlight calculating the load
 func (l *BBR) maxInFlight() int64 {
 	return int64(math.Ceil(float64(l.maxPass()*l.minRT()*l.bucketPerSecond) / 1000.0))
 }
 
-//	shouldDrop (CPU load > 80% || (now - prevDrop) < 1s) and (MaxPass * MinRT * windows) / 1000 < InFlight
+// shouldDrop (CPU load > 80% || (now - prevDrop) < 1s) and (MaxPass * MinRT * windows) / 1000 < InFlight
 func (l *BBR) shouldDrop() bool {
 	now := time.Duration(time.Now().UnixNano())
 	if l.cpu() < l.opts.CPUThreshold {
@@ -235,7 +234,7 @@ func (l *BBR) shouldDrop() bool {
 	return drop
 }
 
-//	Allow Determine the alarm triggering conditions, record the interface time consumption and QPS
+// Allow determines the alarm triggering conditions, record the interface time consumption and QPS
 func (l *BBR) Allow() (func(), error) {
 	if l.shouldDrop() {
 		return nil, errors.New(ErrLimit)

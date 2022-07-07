@@ -1,8 +1,8 @@
 # limiter (This is a community driven project)
 
-##  AdaptiveLimit
-
 ###  Adaptive Algorithm for [Hertz](https://github.com/cloudwego/hertz)
+
+This project is inspired by kratos [limiter](https://github.com/go-kratos/aegis/blob/main/ratelimit/README.md). Thanks to their project.
 
 #### Algorithm core
 
@@ -17,7 +17,7 @@
 
 ```
 	h := server.Default()
-	h.Use(AdaptiveLimit())
+	h.Use(limiter.AdaptiveLimit())
 ```
 
 
@@ -28,24 +28,18 @@
 import (
 	"context"
 
-
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+    "github.com/hertz-contrib/limiter"
 )
 
 func main() {
 	h := server.Default(server.WithHostPorts(":1000"))
-	h.Use(AdaptiveLimit())
+	h.Use(limiter.AdaptiveLimit())
 	h.GET("/hello", func(c context.Context, ctx *app.RequestContext) {
 		ctx.String(consts.StatusOK, "hello")
 	})
 	h.Spin()
 }
 ```
-
-
-Screenshot
-
-More info
-See example
