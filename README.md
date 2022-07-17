@@ -31,7 +31,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-    "github.com/hertz-contrib/limiter"
+        "github.com/hertz-contrib/limiter"
 )
 
 func main() {
@@ -43,3 +43,11 @@ func main() {
 	h.Spin()
 }
 ```
+#### Benchmark
+- Operating System: Arch Linux WSL
+- Test method: Ten requests per second growth
+- Test tools:  Apache Bench(ab)
+
+![](https://github.com/LhdDream/limiter/blob/main/img/benchmark.png)
+
+The test shows that the cpu load remains above and below the level
