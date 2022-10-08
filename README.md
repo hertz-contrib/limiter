@@ -15,23 +15,23 @@ This project is inspired by kratos [limiter](https://github.com/go-kratos/aegis/
 1. Set middleware
 
 
-```
-	h := server.Default()
-	h.Use(limiter.AdaptiveLimit())
+```go
+    h := server.Default()
+    h.Use(limiter.AdaptiveLimit())
 ```
 
 
 2. Run example code
 
 
-```
+```go
 import (
 	"context"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-    "github.com/hertz-contrib/limiter"
+	"github.com/hertz-contrib/limiter"
 )
 
 func main() {
